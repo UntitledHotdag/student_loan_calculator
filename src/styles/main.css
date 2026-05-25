@@ -218,15 +218,15 @@ body {
   background: linear-gradient(135deg, rgba(59, 111, 245, 0.06), rgba(13, 148, 136, 0.06));
 }
 
-.compare-dual {
+.compare-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
   margin-top: 1rem;
 }
 
-@media (max-width: 700px) {
-  .compare-dual {
+@media (max-width: 900px) {
+  .compare-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -242,6 +242,10 @@ body {
   margin: 0 0 0.35rem;
   font-size: 1rem;
   font-weight: 600;
+}
+
+.compare-pillar-aggressive {
+  border-top: 3px solid #1e40af;
 }
 
 .compare-pillar-loan {
@@ -286,6 +290,10 @@ body {
   margin-top: 0.35rem;
   letter-spacing: -0.02em;
   line-height: 1.2;
+}
+
+.compare-pillar-aggressive .hero-metric-value {
+  color: #1e3a8a;
 }
 
 .compare-pillar-loan .hero-metric-value {

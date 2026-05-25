@@ -144,24 +144,47 @@ function formatUnits(units: number): string {
   return units.toFixed(2)
 }
 
+function renderLoanPillar(
+  title: string,
+  subtitle: string,
+  progress: RepaymentProgress,
+  cssClass: string,
+): string {
+  const remainingTotal = progress.remainingBalance + progress.remainingPayments
+
+  return `
+      <div class="compare-pillar ${cssClass}">
+        <h3>${title}</h3>
+        <p class="hint">${subtitle}</p>
+        <div class="hero-metrics">
+          ${heroMetric('至今已還', formatNTD(progress.paidToDate), `其中本金 ${formatNTD(progress.principalPaidToDate)}`)}
+          ${heroMetric('尚須還款', formatNTD(remainingTotal), `剩餘本金 ${formatNTD(progress.remainingBalance)}，尚餘 ${progress.remainingMonths} 期`)}
+        </div>
+      </div>`
+}
+
 function renderCompareAsOfToday(
-  loan: RepaymentProgress,
+  loanA: RepaymentProgress,
+  loanB: RepaymentProgress,
+  installments: number,
   holdings: HoldingsAsOfToday,
   monthlySurplus: number,
   investFutureHint: string,
 ): string {
-  const remainingTotal = loan.remainingBalance + loan.remainingPayments
-
   return `
-    <div class="compare-dual">
-      <div class="compare-pillar compare-pillar-loan">
-        <h3>貸款進度（最長分期）</h3>
-        <p class="hint">截至今日已完成的還款期數：${loan.monthsPaid} 期</p>
-        <div class="hero-metrics">
-          ${heroMetric('至今已還', formatNTD(loan.paidToDate), `其中本金 ${formatNTD(loan.principalPaidToDate)}`)}
-          ${heroMetric('尚須還款', formatNTD(remainingTotal), `剩餘本金 ${formatNTD(loan.remainingBalance)}，尚餘 ${loan.remainingMonths} 期`)}
-        </div>
-      </div>
+    <div class="compare-grid">
+      ${renderLoanPillar(
+        '貸款進度（積極還款）',
+        `依你設定的 ${installments} 期還款節奏，已完成 ${loanA.monthsPaid} 期`,
+        loanA,
+        'compare-pillar-aggressive',
+      )}
+      ${renderLoanPillar(
+        '貸款進度（最長分期）',
+        `截至今日已完成的還款期數：${loanB.monthsPaid} 期`,
+        loanB,
+        'compare-pillar-loan',
+      )}
       <div class="compare-pillar compare-pillar-stock">
         <h3>0050 投資現況（差額投入）</h3>
         <p class="hint">每月投入差額 ${formatNTD(monthlySurplus)}，已過月份依 0050 收盤價估算</p>
@@ -178,7 +201,7 @@ function renderCompareAsOfToday(
 function renderCompareEmpty(): string {
   return `
     <div class="compare-empty">
-      <p>請將<strong>開始還款日</strong>設在今天以前，以查看「至今已還／尚須還款」與「0050 累積投入／今日現值」。</p>
+      <p>請將<strong>開始還款日</strong>設在今天以前，以查看積極還款／最長分期的「至今已還／尚須還款」，以及「0050 累積投入／今日現值」。</p>
     </div>
   `
 }
@@ -211,7 +234,8 @@ function runCalculation(): void {
   const monthlySurplus = planA.monthlyPayment - planB.monthlyPayment
   const startInPast = isStartDateInPast(startDate)
 
-  const loanProgress = getRepaymentProgressAsOfToday(planB.schedule, principal)
+  const loanProgressA = getRepaymentProgressAsOfToday(planA.schedule, principal)
+  const loanProgressB = getRepaymentProgressAsOfToday(planB.schedule, principal)
   const holdings = compute0050AsOfToday({
     startDate,
     aggressiveMonths: installments,
@@ -238,7 +262,14 @@ function runCalculation(): void {
         : '投資期皆在過去，無未來預估月份。'
 
   const compareSection = startInPast
-    ? renderCompareAsOfToday(loanProgress, holdings, monthlySurplus, futureHint)
+    ? renderCompareAsOfToday(
+        loanProgressA,
+        loanProgressB,
+        installments,
+        holdings,
+        monthlySurplus,
+        futureHint,
+      )
     : renderCompareEmpty()
 
   renderResults(`
@@ -262,7 +293,7 @@ function runCalculation(): void {
     </div>
     <div class="card compare-card">
       <h2>截至今日：還款 vs 0050 現況</h2>
-      <p class="hint">假設採最長分期，並把與積極方案之差額投入 0050（${installments} 個月內）</p>
+      <p class="hint">比較積極還款、最長分期截至今日進度，以及差額投入 0050 現值（${installments} 個月內）</p>
       ${compareSection}
       <p class="data-source">0050 資料：${state.dataLabel}</p>
     </div>
